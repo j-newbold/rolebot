@@ -1,4 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { QuickDB } = require("quick.db");
+const db = new QuickDB();
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -19,35 +21,104 @@ module.exports = {
         .addStringOption(option =>
             option.setName('role')
                 .setDescription('The role ID to give the user')
-                .setRequired(true)),            
+                .setRequired(true)),
 	async execute(interaction, client) {
-        //console.log(client.channels.cache.get(interaction.options.getString('message')));
         const channel = client.channels.cache.get(interaction.options.getString('channel'));
         const msg = await channel.messages.fetch(interaction.options.getString('message'));
         const rxn = await msg.react(interaction.options.getString('reaction'));
         const role = await msg.guild.roles.cache.find(r => r.id == interaction.options.getString('role'));
 
-        await console.log(role);
+        await AddToDb(channel, msg, rxn, role);
+
+/*        await console.log("Channel: "+channel+
+                            "\nMessage: "+msg+
+                            "\nReaction: "+rxn+
+                            "\nRole: "+role);
+*/
+        
 
         await interaction.reply({
             content: 'i have done the thing',
             fetchReply: true
         });
-
-        //const emoji = client.emojis.cache.get('1036071608835649567');
-
-        //message.react(emoji);
-
- /*       const filter = (reaction, user) => {
-            return true;
-        };
-        
-        const collector = message.createReactionCollector({ filter, time: 15000 });
-        
-        message.awaitReactions({ filter, max: 4, time: 10000, errors: ['time'] })
-        .then(collected => console.log(collected.size))
-        .catch(collected => {
-            console.log(`After a minute, only ${collected.size} out of 4 reacted.`);
-        });*/
 	},
 };
+
+async function AddToDb(channel, msg, rxn, role) {
+    console.log("adding to database...");
+    allReactions = await db.fetch(`allReactions`);
+    if (!allReactions) {
+        console.log("creating reactions object");
+        allReactions = [
+            {
+                "channelID": channel,
+                "messageList": [
+                    {
+                        "messageID": msg,
+                        "reactionList": [
+                            {
+                                "reactionName": rxn,
+                                "roleList": [role]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+    let reqChannel = allReactions.filter(ch => ch.channelID == channel);
+    if (!reqChannel) {
+        console.log("creating new channel object");
+        allReactions.append(
+            {
+                "channelID": channel,
+                "messageList": [
+                    {
+                        "messageID": msg,
+                        "reactionList": [
+                            {
+                                "reactionName": rxn,
+                                "roleList": [role]
+                            }
+                        ]
+                    }
+                ]
+            }
+        )
+    } else {
+        let reqMessage = reqChannel.messageList.filter(ch2 => ch2.messageID == msg);
+        if (!reqMessage) {
+            console.log("creating new message object");
+            reqChannel.messageList.append(
+                {
+                    "messageID": msg,
+                    "reactionList": [
+                        {
+                            "reactionName": rxn,
+                            "roleList": [role]
+                        }
+                    ]
+                }
+            )
+        } else {
+            let reqReaction = reqMessage.reactionList.filter(ch3 => ch3.reactionName == rxn);
+            if (!reqReaction) {
+                console.log("creating new reaction object");
+                reqMessage.reactionList.append(
+                    {
+                        "reactionName": rxn,
+                        "roleList": [role]
+                    }
+                );
+            } else {
+                if (reqReaction.roleList.includes(role)) {
+                    console.log("reaction role already found!");
+                } else {
+                    console.log("adding new role to reaction object");
+                    reqReaction.roleList.append(role);
+                }
+            }
+        }
+    }
+    await db.set(`allReactions`, allReactions);
+}

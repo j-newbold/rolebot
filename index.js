@@ -2,6 +2,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, Partials } = require('discord.js');
 const { token } = require('./config.json');
+const { QuickDB } = require("quick.db");
+const db = new QuickDB();
 
 const client = new Client({
 	intents: 32767,
