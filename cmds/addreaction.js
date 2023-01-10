@@ -5,7 +5,7 @@ const db = new QuickDB();
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('addreaction')
-		.setDescription('Replies with Pong!')
+		.setDescription('Adds reaction role listener')
         .addStringOption(option =>
             option.setName('message')
                 .setDescription('The message ID to watch for reactions')
@@ -46,7 +46,7 @@ module.exports = {
 
 async function AddToDb(channel, msg, rxn, role) {
     console.log("adding to database...");
-    allReactions = await db.fetch(`allReactions`);
+    let allReactions = await db.get(`allReactions`);
     if (!allReactions) {
         console.log("creating reactions object");
         allReactions = [
@@ -58,67 +58,70 @@ async function AddToDb(channel, msg, rxn, role) {
                         "reactionList": [
                             {
                                 "reactionName": rxn,
-                                "roleList": [role]
+                                "role": role
                             }
                         ]
                     }
                 ]
             }
         ]
-    }
-    let reqChannel = allReactions.filter(ch => ch.channelID == channel);
-    if (!reqChannel) {
-        console.log("creating new channel object");
-        allReactions.append(
-            {
-                "channelID": channel,
-                "messageList": [
-                    {
-                        "messageID": msg,
-                        "reactionList": [
-                            {
-                                "reactionName": rxn,
-                                "roleList": [role]
-                            }
-                        ]
-                    }
-                ]
-            }
-        )
     } else {
-        let reqMessage = reqChannel.messageList.filter(ch2 => ch2.messageID == msg);
-        if (!reqMessage) {
-            console.log("creating new message object");
-            reqChannel.messageList.append(
+        console.log("reactions object exists");
+        let reqChannel = allReactions.filter(ch => ch.channelID == channel);
+        if (!reqChannel) {
+            console.log("creating new channel object");
+            allReactions.append(
                 {
-                    "messageID": msg,
-                    "reactionList": [
+                    "channelID": channel,
+                    "messageList": [
                         {
-                            "reactionName": rxn,
-                            "roleList": [role]
+                            "messageID": msg,
+                            "reactionList": [
+                                {
+                                    "reactionName": rxn,
+                                    "role": role
+                                }
+                            ]
                         }
                     ]
                 }
             )
         } else {
-            let reqReaction = reqMessage.reactionList.filter(ch3 => ch3.reactionName == rxn);
-            if (!reqReaction) {
-                console.log("creating new reaction object");
-                reqMessage.reactionList.append(
+            let reqMessage = reqChannel.messageList.filter(ch2 => ch2.messageID == msg);
+            if (!reqMessage) {
+                console.log("creating new message object");
+                reqChannel.messageList.append(
                     {
-                        "reactionName": rxn,
-                        "roleList": [role]
+                        "messageID": msg,
+                        "reactionList": [
+                            {
+                                "reactionName": rxn,
+                                "role": role
+                            }
+                        ]
                     }
-                );
+                )
             } else {
-                if (reqReaction.roleList.includes(role)) {
-                    console.log("reaction role already found!");
+                let reqReaction = reqMessage.reactionList.filter(ch3 => ch3.reactionName == rxn);
+                if (!reqReaction) {
+                    console.log("creating new reaction object");
+                    reqMessage.reactionList.append(
+                        {
+                            "reactionName": rxn,
+                            "role": [role]
+                        }
+                    );
                 } else {
-                    console.log("adding new role to reaction object");
-                    reqReaction.roleList.append(role);
+                    if (reqReaction.role == role) {
+                        console.log("reaction role already found!");
+                    } else {
+                        console.log("replacing/creating the reaction object's role");
+                        reqReaction.role = role;
+                    }
                 }
             }
         }
     }
+
     await db.set(`allReactions`, allReactions);
 }
