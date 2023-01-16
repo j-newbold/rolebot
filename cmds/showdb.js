@@ -9,7 +9,7 @@ module.exports = {
 	async execute(interaction, client) {
         let allReactions = await db.get(`allReactions`);
         console.log("printing all reactions");
-        console.log(allReactions[0].messageList[0].reactionList);
+        console.log(allReactions[0].messageList);
         await interaction.reply({
             content: 'i have done the thing',
             fetchReply: true

@@ -67,7 +67,7 @@ async function AddToDb(channel, msg, rxn, role) {
         ]
     } else {
         console.log("reactions object exists");
-        let reqChannel = allReactions.filter(ch => ch.channelID == channel);
+        let reqChannel = allReactions.find(ch => ch.channelID.id == channel);
         if (!reqChannel) {
             console.log("creating new channel object");
             allReactions.append(
@@ -87,10 +87,12 @@ async function AddToDb(channel, msg, rxn, role) {
                 }
             )
         } else {
-            let reqMessage = reqChannel.messageList.filter(ch2 => ch2.messageID == msg);
+            //console.log(reqChannel);
+            let reqMessage = reqChannel.messageList.find(ch2 => ch2.messageID == msg);
             if (!reqMessage) {
                 console.log("creating new message object");
-                reqChannel.messageList.append(
+                console.log(reqChannel.messageList);
+                reqChannel.messageList.push(
                     {
                         "messageID": msg,
                         "reactionList": [
@@ -105,7 +107,7 @@ async function AddToDb(channel, msg, rxn, role) {
                 let reqReaction = reqMessage.reactionList.filter(ch3 => ch3.reactionName == rxn);
                 if (!reqReaction) {
                     console.log("creating new reaction object");
-                    reqMessage.reactionList.append(
+                    reqMessage.reactionList.push(
                         {
                             "reactionName": rxn,
                             "role": [role]
