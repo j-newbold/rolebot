@@ -86,9 +86,10 @@ async function AddToDb(channel, msg, rxn, role) {
                 }
             )
         } else {
-            let reqMessage = reqChannel.messageList.find(ch2 => ch2.messageID == msg.id);
+            let reqMessage = reqChannel.messageList.filter(ch2 => ch2.messageID == msg);
             if (!reqMessage) {
-                reqChannel.messageList.push(
+                console.log("creating new message object");
+                reqChannel.messageList.append(
                     {
                         "messageID": msg.id,
                         "reactionList": [
@@ -102,7 +103,8 @@ async function AddToDb(channel, msg, rxn, role) {
             } else {
                 let reqReaction = reqMessage.reactionList.find(ch3 => ch3.reactionID == rxn);
                 if (!reqReaction) {
-                    reqMessage.reactionList.push(
+                    console.log("creating new reaction object");
+                    reqMessage.reactionList.append(
                         {
                             "reactionID": rxn,
                             "role": role.id

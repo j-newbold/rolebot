@@ -15,7 +15,7 @@ module.exports = {
         }
         let allReactions = await db.get(`allReactions`);
         console.log("printing all reactions");
-        console.log(allReactions[0].messageList[0]);
+        console.log(allReactions[0].messageList[0].reactionList);
         await interaction.reply({
             content: "job's done",
             fetchReply: true
