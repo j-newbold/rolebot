@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { QuickDB } = require("quick.db");
 const db = new QuickDB();
 
@@ -21,44 +21,45 @@ module.exports = {
         .addStringOption(option =>
             option.setName('role')
                 .setDescription('The role ID to give the user')
-                .setRequired(true)),
+                .setRequired(true))
+                .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	async execute(interaction, client) {
-        const channel = client.channels.cache.get(interaction.options.getString('channel'));
-        const msg = await channel.messages.fetch(interaction.options.getString('message'));
-        const rxn = await msg.react(interaction.options.getString('reaction'));
-        const role = await msg.guild.roles.cache.find(r => r.id == interaction.options.getString('role'));
+        try {
+            const channel = client.channels.cache.get(interaction.options.getString('channel'));
+            const msg = await channel.messages.fetch(interaction.options.getString('message'));
+            const rxn = await interaction.options.getString('reaction');
+            await msg.react(rxn);
+            const role = await msg.guild.roles.cache.find(r => r.id == interaction.options.getString('role'));
+    
+            await AddToDb(channel, msg, rxn, role);
+        } catch(err) {
+            console.log(err);
+        }
 
-        await AddToDb(channel, msg, rxn, role);
-
-/*        await console.log("Channel: "+channel+
-                            "\nMessage: "+msg+
-                            "\nReaction: "+rxn+
-                            "\nRole: "+role);
-*/
-        
-
-        await interaction.reply({
-            content: 'i have done the thing',
-            fetchReply: true
-        });
+        await interaction.reply("job's done");
+        await sleep(2000);
+        await interaction.deleteReply();
 	},
 };
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function AddToDb(channel, msg, rxn, role) {
     console.log("adding to database...");
     let allReactions = await db.get(`allReactions`);
-    if (!allReactions) {
-        console.log("creating reactions object");
+    if (!allReactions || allReactions.length == 0) {
         allReactions = [
             {
-                "channelID": channel,
+                "channelID": channel.id,
                 "messageList": [
                     {
-                        "messageID": msg,
+                        "messageID": msg.id,
                         "reactionList": [
                             {
-                                "reactionName": rxn,
-                                "role": role
+                                "reactionID": rxn,
+                                "role": role.id
                             }
                         ]
                     }
@@ -66,20 +67,18 @@ async function AddToDb(channel, msg, rxn, role) {
             }
         ]
     } else {
-        console.log("reactions object exists");
-        let reqChannel = allReactions.filter(ch => ch.channelID == channel);
+        let reqChannel = allReactions.find(ch => ch.channelID == channel.id);
         if (!reqChannel) {
-            console.log("creating new channel object");
-            allReactions.append(
+            allReactions.push(
                 {
-                    "channelID": channel,
+                    "channelID": channel.id,
                     "messageList": [
                         {
-                            "messageID": msg,
+                            "messageID": msg.id,
                             "reactionList": [
                                 {
-                                    "reactionName": rxn,
-                                    "role": role
+                                    "reactionID": rxn,
+                                    "role": role.id
                                 }
                             ]
                         }
@@ -87,36 +86,32 @@ async function AddToDb(channel, msg, rxn, role) {
                 }
             )
         } else {
-            let reqMessage = reqChannel.messageList.filter(ch2 => ch2.messageID == msg);
+            let reqMessage = reqChannel.messageList.find(ch2 => ch2.messageID == msg.id);
             if (!reqMessage) {
-                console.log("creating new message object");
-                reqChannel.messageList.append(
+                reqChannel.messageList.push(
                     {
-                        "messageID": msg,
+                        "messageID": msg.id,
                         "reactionList": [
                             {
-                                "reactionName": rxn,
-                                "role": role
+                                "reactionID": rxn,
+                                "role": role.id
                             }
                         ]
                     }
                 )
             } else {
-                let reqReaction = reqMessage.reactionList.filter(ch3 => ch3.reactionName == rxn);
+                let reqReaction = reqMessage.reactionList.find(ch3 => ch3.reactionID == rxn);
                 if (!reqReaction) {
-                    console.log("creating new reaction object");
-                    reqMessage.reactionList.append(
+                    reqMessage.reactionList.push(
                         {
-                            "reactionName": rxn,
-                            "role": [role]
+                            "reactionID": rxn,
+                            "role": role.id
                         }
                     );
                 } else {
-                    if (reqReaction.role == role) {
-                        console.log("reaction role already found!");
+                    if (reqReaction.role == role.id) {
                     } else {
-                        console.log("replacing/creating the reaction object's role");
-                        reqReaction.role = role;
+                        reqReaction.role = role.id;
                     }
                 }
             }

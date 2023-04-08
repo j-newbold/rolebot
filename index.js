@@ -14,28 +14,11 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'cmds');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-//const eventsPath = path.join(__dirname, 'events');
-//const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-/*for (const file of eventFiles) {
-	const filePath = path.join(eventsPath, file);
-	const event = require(filePath);
-	if (event.once) {
-		client.once(event.name, (...args) => event.execute(...args));
-	} else {
-		client.on(event.name, (...args) => event.execute(...args));
-	}
-}*/
-
 for (const file of commandFiles) {
 	const filePath = path.join(commandsPath, file);
 	const command = require(filePath);
 	client.commands.set(command.data.name, command);
 }
-
-/*client.once(Events.ClientReady, () => {
-	console.log('Ready!');
-});*/
 
 client.on(Events.InteractionCreate, async interaction => {
 	if (!interaction.isChatInputCommand()) return;
@@ -53,22 +36,55 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
-	// When a reaction is received, check if the structure is partial
 	if (reaction.partial) {
-		// If the message this reaction belongs to was removed, the fetching might result in an API error which should be handled
 		try {
 			await reaction.fetch();
 		} catch (error) {
 			console.error('Something went wrong when fetching the message:', error);
-			// Return as `reaction.message.author` may be undefined/null
 			return;
 		}
 	}
 
-	// Now the message has been cached and is fully available
-	console.log(`${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`);
-	// The reaction is now also fully available and the properties will be reflected accurately:
-	console.log(`${reaction.count} user(s) have given the same reaction to this message!`);
+    let allReactions = await db.get(`allReactions`);
+
+	let tempVar = allReactions.find(el => el.channelID == reaction.message.channel.id);
+	if (tempVar) {
+		let tempVar2 = tempVar.messageList.find(el2 => el2.messageID == reaction.message.id);
+		if (tempVar2) {
+			let tempStr = "<:"+reaction.emoji.name+":"+reaction.emoji.id+">";
+			tempVar3 = tempVar2.reactionList.find(el3 => el3.reactionID == tempStr || el3.reactionID == reaction.emoji.name);
+			if (tempVar3) {
+				const gm = reaction.message.guild.members.cache.get(user.id);
+				gm.roles.add(tempVar3.role);
+			}
+		}
+	}
+});
+
+client.on(Events.MessageReactionRemove, async (reaction, user) => {
+	if (reaction.partial) {
+		try {
+			await reaction.fetch();
+		} catch (error) {
+			console.error('Something went wrong when fetching the message:', error);
+			return;
+		}
+	}
+
+    let allReactions = await db.get(`allReactions`);
+
+	let tempVar = allReactions.find(el => el.channelID == reaction.message.channel.id);
+	if (tempVar) {
+		let tempVar2 = tempVar.messageList.find(el2 => el2.messageID == reaction.message.id);
+		if (tempVar2) {
+			let tempStr = "<:"+reaction.emoji.name+":"+reaction.emoji.id+">";
+			tempVar3 = tempVar2.reactionList.find(el3 => el3.reactionID == tempStr || el3.reactionID == reaction.emoji.name);
+			if (tempVar3) {
+				const gm = reaction.message.guild.members.cache.get(user.id);
+				gm.roles.remove(tempVar3.role);
+			}
+		}
+	}
 });
 
 client.login(token);

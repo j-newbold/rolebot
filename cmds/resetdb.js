@@ -5,17 +5,16 @@ const db = new QuickDB();
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('showdb')
-		.setDescription('Prints all reactions to command line')
+		.setName('resetdb')
+		.setDescription('Resets database')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	async execute(interaction, client) {
         if (interaction.user.id != ownerId) {
-            console.log("Showdb command executed without permission!");
+            console.log("Resetdb command executed without permission!");
             return;
         }
-        let allReactions = await db.get(`allReactions`);
-        console.log("printing all reactions");
-        console.log(allReactions[0].messageList[0]);
+        await db.set(`allReactions`, []);
+        console.log("resetting all reactions");
         await interaction.reply({
             content: "job's done",
             fetchReply: true
