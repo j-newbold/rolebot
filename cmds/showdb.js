@@ -9,14 +9,15 @@ module.exports = {
 		.setDescription('Prints all reactions to command line')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	async execute(interaction, client) {
+        await interaction.deferReply();
         if (interaction.user.id != ownerId) {
             console.log("Showdb command executed without permission!");
             return;
         }
         let allReactions = await db.get(`allReactions`);
         console.log("printing all reactions");
-        console.log(allReactions[0].messageList[0].reactionList);
-        await interaction.reply({
+        console.log(allReactions);
+        await interaction.editReply({
             content: "job's done",
             fetchReply: true
         });
