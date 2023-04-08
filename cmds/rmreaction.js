@@ -58,7 +58,7 @@ module.exports = {
             console.log("ERROR: "+err);
         }
 
-        await interaction.reply("job's done");
+        await interaction.editReply("job's done");
         await sleep(2000);
         await deleteReply();
 	},

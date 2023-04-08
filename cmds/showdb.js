@@ -9,7 +9,6 @@ module.exports = {
 		.setDescription('Prints all reactions to command line')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	async execute(interaction, client) {
-        await interaction.deferReply();
         if (interaction.user.id != ownerId) {
             console.log("Showdb command executed without permission!");
             return;

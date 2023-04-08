@@ -15,7 +15,7 @@ module.exports = {
         }
         await db.set(`allReactions`, []);
         console.log("resetting all reactions");
-        await interaction.reply({
+        await interaction.editReply({
             content: "job's done",
             fetchReply: true
         });
