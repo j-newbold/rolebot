@@ -15,10 +15,12 @@ module.exports = {
         }
         let allReactions = await db.get(`allReactions`);
         console.log("printing all reactions");
-        console.log(allReactions);
+        console.log(allReactions[0].messageList);
         await interaction.editReply({
             content: "job's done",
             fetchReply: true
         });
+        await sleep(2000);
+        await interaction.deleteReply();
     }
 }

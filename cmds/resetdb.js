@@ -19,5 +19,7 @@ module.exports = {
             content: "job's done",
             fetchReply: true
         });
+        await sleep(2000);
+        await interaction.deleteReply();
     }
 }
