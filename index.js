@@ -1,12 +1,19 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, Events, GatewayIntentBits, Partials } = require('discord.js');
-const { token } = require('./config.json');
+const { Client, Collection, Events, GatewayIntentBits, Partials, Intents } = require('discord.js');
+const { token, clientId } = require('./config.json');
 const { QuickDB } = require("quick.db");
 const db = new QuickDB();
 
+const {REST} = require("@discordjs/rest");
+const { Routes } = require("discord-api-types/v9");
+const { Player } = require("discord-player");
+
 const client = new Client({
-	intents: 32767,
+	intents: [32767,
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildVoiceStates],
 	partials: [Partials.Message, Partials.Channel, Partials.Reaction]
 });
 
@@ -19,6 +26,29 @@ for (const file of commandFiles) {
 	const command = require(filePath);
 	client.commands.set(command.data.name, command);
 }
+
+client.player = new Player(client, {
+    ytdlOptions: {
+        quality: "highestaudio",
+        highWaterMark: 1 << 25
+    }
+});
+
+client.player.extractors.loadDefault();
+
+/* client.on("ready", () => {
+    const guild_ids = client.guilds.cache.map(guild => guild.id);
+
+    const rest = new REST({version: "9"}).setToken(token);
+    for (const guildId of guild_ids)
+    {
+        rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+            body:commands
+        })
+        .fetchInvite(() => console.log(`Added commands to ${guildId}`))
+        .catch(console.error);
+    }
+}) */
 
 client.on(Events.InteractionCreate, async interaction => {
 	await interaction.deferReply();
